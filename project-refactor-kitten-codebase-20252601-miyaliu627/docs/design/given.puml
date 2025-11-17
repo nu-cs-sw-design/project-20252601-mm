@@ -1,0 +1,173 @@
+@startuml
+
+' ========= ENUMS =========
+enum GameType {
+  NONE
+  EXPLODING_KITTENS
+  STREAKING_KITTENS
+  IMPLODING_KITTENS
+}
+
+enum CardType {
+  NOPE
+  DEFUSE
+  ATTACK
+  SHUFFLE
+  SKIP
+  SEE_THE_FUTURE
+  CAT_ONE
+  CAT_TWO
+  CAT_THREE
+  CAT_FOUR
+  EXPLODING_KITTEN
+  STREAKING_KITTEN
+  SWAP_TOP_AND_BOTTOM
+  GARBAGE_COLLECTION
+  CURSE_OF_THE_CAT_BUTT
+  ALTER_THE_FUTURE
+  CATOMIC_BOMB
+  SUPER_SKIP
+  MARK
+  IMPLODING_KITTEN
+  REVERSE
+  FERAL_CAT
+  TARGETED_ATTACK
+  DRAW_FROM_THE_BOTTOM
+}
+
+CardType --> GameType
+
+
+class Card {
+  - CardType cardType
+  - boolean isMarked
+  - boolean isFacedUp
+  + Card(CardType cardType)
+  + getCardType() : CardType
+  + isMarked() : boolean
+  + setMarked(boolean) : void
+  + isFacedUp() : boolean
+  + setFacedUp(boolean) : void
+}
+
+Card --> CardType
+
+
+class Player {
+  - int playerID
+  - List<Card> hand
+  - boolean isDead
+  - Random rand
+  - boolean isCursed
+  + Player(int id, Instantiator inst)
+  + getPlayerID() : int
+  + isDead() : boolean
+  + setIsDead() : void
+  + addCardToHand(Card) : void
+  + removeCardFromHand(int) : CardType
+  + addDefuse(Card) : void
+  + hasCard(CardType) : boolean
+  + getCardAt(int) : Card
+  + getIndexOfCard(CardType) : int
+  + shuffleHand() : void
+  + checkNumberOfCardsInHand(CardType) : int
+  + setCursed(boolean) : void
+  + isCursed() : boolean
+}
+
+Player --> Card
+Player --> CardType
+Player --> Instantiator
+Player --> Random
+
+
+class Instantiator {
+  + createCard(CardType) : Card
+  + createRandom() : Random
+  + createCardList() : List<Card>
+}
+
+Instantiator ..> Card
+Instantiator ..> Random
+
+
+class Deck {
+  - List<Card> deck
+  - Random rand
+  - GameType gameType
+  - int numberOfPlayers
+  - int maxDeckSize
+  - Instantiator instantiator
+
+  + Deck(GameType, int, Instantiator)
+  + initializeDeck() : void
+  + setGameType(GameType) : void
+  + setNumberOfPlayers(int) : void
+  + drawCard() : Card
+  + drawCardFromBottom() : Card
+  + shuffleDeck() : void
+  + insertCard(CardType, int, boolean) : void
+  + removeBombs() : int
+  + insertExplodingKittenAtIndex(int) : void
+  + insertImplodingKittenAtIndex(int, Card) : void
+  + reorderDeckCards(int[], List<Card>) : void
+  + swapTopAndBottom() : void
+  + getDeckSize() : int
+  + isEmpty() : boolean
+  + getCardAtIndex(int) : Card
+}
+
+Deck --> Card
+Deck --> CardType
+Deck --> Instantiator
+Deck --> GameType
+Deck --> Random
+
+
+class Game {
+  - Player[] players
+  - Deck deck
+  - GameType gameType
+  - int[] turnTracker
+  - int currentPlayerTurn
+  - int currentPlayerNumberOfTurns
+  - boolean isReversed
+  - List<Integer> attackQueue
+  - boolean attacked
+  - int attackCounter
+  - int numberOfAttacks
+  - Random rand
+
+  + Game(Player[], Deck, int[], Random)
+  + retrieveGameMode(GameType) : void
+  + startAttackPhase() : void
+  + playAttack() : void
+  + playTargetedAttack(int) : void
+  + playExplodingKitten(int) : boolean
+  + playImplodingKitten() : boolean
+  + playDefuse(int, int) : void
+  + playReverse() : void
+  + playSkip(boolean) : void
+  + playShuffle(int) : void
+  + playGarbageCollection(CardType) : void
+  + playMark(int, int) : void
+  + playCatomicBomb() : void
+  + drawCard() : Card
+  + drawFromBottom() : Card
+  + stealRandomCard(int) : void
+  + stealTypeCard(CardType, int) : boolean
+  + setPlayerNumberOfTurns() : void
+  + setTurnToTargetedIndexIfAttackOccurred() : void
+  + incrementPlayerTurn() : void
+  + decrementNumberOfTurns() : void
+}
+
+Game --> Player
+Game --> Deck
+Game --> Card
+Game --> CardType
+Game --> GameType
+Game --> Random
+
+
+@enduml
