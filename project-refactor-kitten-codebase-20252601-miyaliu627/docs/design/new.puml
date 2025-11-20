@@ -1,0 +1,280 @@
+@startuml
+
+' ========= ENUMS =========
+enum GameType {
+  NONE
+  EXPLODING_KITTENS
+  STREAKING_KITTENS
+  IMPLODING_KITTENS
+}
+
+enum CardType {
+  NOPE
+  DEFUSE
+  ATTACK
+  SHUFFLE
+  SKIP
+  SEE_THE_FUTURE
+  CAT_ONE
+  CAT_TWO
+  CAT_THREE
+  CAT_FOUR
+  EXPLODING_KITTEN
+  STREAKING_KITTEN
+  SWAP_TOP_AND_BOTTOM
+  GARBAGE_COLLECTION
+  CURSE_OF_THE_CAT_BUTT
+  ALTER_THE_FUTURE
+  CATOMIC_BOMB
+  SUPER_SKIP
+  MARK
+  IMPLODING_KITTEN
+  REVERSE
+  FERAL_CAT
+  TARGETED_ATTACK
+  DRAW_FROM_THE_BOTTOM
+}
+
+CardType --> GameType
+
+
+' ========= CORE LOGIC =========
+
+class Card {
+  - CardType cardType
+  - boolean isMarked
+  - boolean isFacedUp
+  + Card(CardType cardType)
+  + getCardType() : CardType
+  + markCard() : void
+  + checkIfMarked() : boolean
+  + setFacedUp() : void
+  + checkIfFacedUp() : boolean
+}
+
+Card --> CardType
+
+
+class Player {
+  - int playerID
+  - List<Card> hand
+  - boolean isDead
+  - Random rand
+  - boolean isCursed
+  + Player(int id, Instantiator inst)
+  + getPlayerID() : int
+  + addCardToHand(Card) : void
+  + addDefuse(Card) : void
+  + removeCardFromHand(int) : CardType
+  + hasCard(CardType) : boolean
+  + getCardAt(int) : Card
+  + getIndexOfCard(CardType) : int
+  + getHandSize() : int
+  + shuffleHand() : void
+  + checkNumberOfCardsInHand(CardType) : int
+  + getIsDead() : boolean
+  + setIsDead() : void
+  + getIsCursed() : boolean
+  + setCursed(boolean) : void
+}
+
+Player --> Card
+Player --> CardType
+Player --> Instantiator
+
+
+class Instantiator {
+  + createCard(CardType) : Card
+  + createRandom() : Random
+  + createCardList() : List<Card>
+}
+
+Instantiator ..> Card
+Instantiator ..> Random
+
+
+class Deck {
+  - List<Card> deck
+  - Random rand
+  - GameType gameType
+  - int numberOfPlayers
+  - int maxDeckSize
+  - Instantiator instantiator
+
+  + Deck(List<Card>, Random, GameType, int, int, Instantiator)
+  + initializeDeck() : void
+  + setNumberOfPlayers(int) : void
+  + chooseGameType(GameType) : void
+  + drawCard() : Card
+  + drawCardFromBottom() : Card
+  + shuffleDeck() : void
+  + insertCard(CardType, int, boolean) : void
+  + removeBombs() : int
+  + insertExplodingKittenAtIndex(int) : void
+  + insertImplodingKittenAtIndex(int, Card) : void
+  + reorderDeckCards(int[], List<Card>) : void
+  + getDeckSize() : int
+  + getCardAtIndex(int) : Card
+}
+
+Deck --> Card
+Deck --> CardType
+Deck --> Instantiator
+Deck --> GameType
+
+
+' ========= NEW DESIGN =========
+
+interface GameInteractionPort {
+  + askYesNo(String) : boolean
+  + askForIndex(String, int, int) : int
+  + askForPlayer(String, List<Integer>) : int
+  + showMessage(String, Object...) : void
+}
+
+class PlayContext {
+  - Game game
+  - int actingPlayerIndex
+  - GameInteractionPort interactionPort
+  + PlayContext(Game, int, GameInteractionPort)
+  + getGame() : Game
+  + getActingPlayerIndex() : int
+  + getInteractionPort() : GameInteractionPort
+}
+
+PlayContext --> Game
+PlayContext --> GameInteractionPort
+
+
+interface CardEffect {
+  + getSupportedType() : CardType
+  + isNopeable() : boolean
+  + play(PlayContext) : void
+}
+
+CardEffect ..> PlayContext
+CardEffect --> CardType
+
+
+class CardEffectRegistry {
+  - Map<CardType, CardEffect> effects
+  + register(CardEffect) : void
+  + get(CardType) : CardEffect
+}
+
+CardEffectRegistry --> CardEffect
+CardEffectRegistry --> CardType
+
+
+class ReactionContext {
+  - Game game
+  - int actingPlayerIndex
+  - Card card
+  - GameInteractionPort interactionPort
+  + ReactionContext(Game, int, Card, GameInteractionPort)
+  + getGame() : Game
+  + getActingPlayerIndex() : int
+  + getCard() : Card
+  + getInteractionPort() : GameInteractionPort
+}
+
+ReactionContext --> Game
+ReactionContext --> Card
+ReactionContext --> GameInteractionPort
+
+
+interface ReactionManager {
+  + resolveNopeReactions(ReactionContext) : boolean
+}
+
+ReactionManager ..> ReactionContext
+
+
+' ========= CONCRETE CARD EFFECTS FOR THE FOUR CARDS =========
+
+class ExplodingKittenEffect {
+  - Game game
+  - Deck deck
+  + ExplodingKittenEffect(Game)
+  + getSupportedType() : CardType
+  + isNopeable() : boolean
+  + play(PlayContext) : void
+}
+
+ExplodingKittenEffect ..|> CardEffect
+ExplodingKittenEffect --> Game
+
+
+class ShuffleEffect {
+  - Game game
+  + ShuffleEffect(Game)
+  + getSupportedType() : CardType
+  + isNopeable() : boolean
+  + play(PlayContext) : void
+}
+
+ShuffleEffect ..|> CardEffect
+ShuffleEffect --> Game
+
+
+class ReverseEffect {
+  - Game game
+  + ReverseEffect(Game)
+  + getSupportedType() : CardType
+  + isNopeable() : boolean
+  + play(PlayContext) : void
+}
+
+ReverseEffect ..|> CardEffect
+ReverseEffect --> Game
+
+
+' ========= UPDATED GAME =========
+
+class Game {
+  - Player[] players
+  - Deck deck
+  - GameType gameType
+  - int[] turnTracker
+  - int currentPlayerTurn
+  - int currentPlayerNumberOfTurns
+  - boolean isReversed
+  - List<Integer> attackQueue
+  - boolean attacked
+  - int attackCounter
+  - int numberOfAttacks
+  - Random rand
+  - CardEffectRegistry cardEffectRegistry
+  - ReactionManager reactionManager
+  - GameInteractionPort interactionPort
+
+  + Game(int, GameType, Deck, Player[], Random, List<Integer>, int[],
+         CardEffectRegistry, ReactionManager, GameInteractionPort)
+  + retrieveGameMode(GameType) : void
+  + setNumberOfPlayers(int) : void
+  + playCard(int, Card) : void
+  + drawCard() : Card
+  + drawFromBottom() : Card
+  + consumeTurnOfCurrentPlayer() : void
+  + reverseTurnOrder() : void
+  + incrementPlayerTurn() : void
+  + setPlayerNumberOfTurns() : void
+  + setTurnToTargetedIndexIfAttackOccurred() : void
+  + getPlayerAtIndex(int) : Player
+  + checkIfPlayerDead(int) : boolean
+  + checkNumberOfAlivePlayers() : int
+  + getNumberOfTurns() : int
+  + getGameType() : GameType
+}
+
+Game --> Player
+Game --> Deck
+Game --> GameType
+Game --> Card
+Game --> CardType
+Game --> CardEffectRegistry
+Game --> ReactionManager
+Game --> GameInteractionPort
+
+
+@enduml
