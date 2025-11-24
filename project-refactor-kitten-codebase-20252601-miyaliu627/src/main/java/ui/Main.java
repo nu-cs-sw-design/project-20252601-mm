@@ -1,12 +1,6 @@
 package ui;
 
-import domain.game.Instantiator;
-import domain.game.Card;
-import domain.game.CardType;
-import domain.game.Deck;
-import domain.game.Game;
-import domain.game.GameType;
-import domain.game.Player;
+import domain.game.*;
 
 import java.util.ArrayList;
 import java.security.SecureRandom;
@@ -33,6 +27,18 @@ public class Main {
 				players, new SecureRandom(),
 				new ArrayList<Integer>(), turnTracker);
 		GameUI gameUI = new GameUI(game);
+
+        CardEffectRegistry registry = new CardEffectRegistry();
+        ReactionManager reactionManager = new DefaultReactionManager();
+
+        // Register effects we actually implemented
+        registry.register(new ShuffleEffect(game));
+        registry.register(new ReverseEffect(game));
+        // ExplodingKittenEffect will be registered later
+
+        // Wire into Game and give it the UI as interaction port
+        game.setCardEffectInfrastructure(registry, reactionManager, gameUI);
+
 		gameUI.chooseLanguage();
 		gameUI.chooseGame();
 		gameUI.chooseNumberOfPlayers();
