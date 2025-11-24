@@ -12,11 +12,64 @@ import java.util.Scanner;
 import java.nio.charset.StandardCharsets;
 
 
-public class GameUI {
+public class GameUI implements GameInteractionPort {
 	private Game game;
 	private ResourceBundle messages;
 
 	public GameUI (Game game) { this.game = game; }
+
+    @Override
+    public boolean askYesNo(String messageKey) {
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+        String prompt = messages.getString(messageKey);
+        final String optionYes = messages.getString("optionYes");
+        final String optionNo = messages.getString("optionNo");
+        System.out.println(prompt);
+        System.out.println(optionYes);
+        System.out.println(optionNo);
+
+        while (true) {
+            String input = scanner.nextLine().trim();
+            if ("1".equals(input)) return true;
+            if ("2".equals(input)) return false;
+            System.out.println(messages.getString("invalidChoice"));
+        }
+    }
+
+    @Override
+    public int askForIndex(String messageKey, int minInclusive, int maxInclusive) {
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+        String prompt = messages.getString(messageKey);
+        System.out.println(prompt);
+        while (true) {
+            String input = scanner.nextLine();
+            try {
+                int value = Integer.parseInt(input);
+                if (value < minInclusive || value > maxInclusive) {
+                    System.out.println(messages.getString("invalidNumber"));
+                } else {
+                    return value;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println(messages.getString("invalidNumber"));
+            }
+        }
+    }
+
+    @Override
+    public int askForPlayer(String messageKey, int[] validPlayerIndices) {
+        // For now: just reuse askForIndex with min/max bounds.
+        int min = 0;
+        int max = game.getNumberOfPlayers() - 1;
+        return askForIndex(messageKey, min, max);
+    }
+
+    @Override
+    public void showMessage(String messageKey, Object... args) {
+        String pattern = messages.getString(messageKey);
+        String msg = java.text.MessageFormat.format(pattern, args);
+        System.out.println(msg);
+    }
 
 	public void chooseLanguage() {
 		Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
@@ -1552,7 +1605,8 @@ public class GameUI {
 					System.out.println(newBottomCardMessage);
 					break;
 				case SHUFFLE:
-					playShuffle();
+                    Card shuffleCard = new Card(CardType.SHUFFLE);
+                    game.playCard(game.getPlayerTurn(), shuffleCard);
 					break;
 				case SKIP:
 					playSkip(false);
@@ -1579,7 +1633,8 @@ public class GameUI {
 					playCatomicBomb();
 					return;
 				case REVERSE:
-					playReverse();
+                    Card reverseCard = new Card(CardType.REVERSE);
+                    game.playCard(game.getPlayerTurn(), reverseCard);
 					return;
 				case SEE_THE_FUTURE:
 					playSeeTheFuture();
