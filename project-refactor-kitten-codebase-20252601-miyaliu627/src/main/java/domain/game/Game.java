@@ -34,6 +34,10 @@ public class Game {
 	private static final String NUMBER_OF_TURNS_OUT_OF_BOUNDS_EXCEPTION =
 			"Number of turns must be between 1 and 6.";
 
+    private CardEffectRegistry cardEffectRegistry;
+    private ReactionManager reactionManager;
+    private GameInteractionPort interactionPort;
+
 	public Game (int numberOfPlayers, GameType gameType,
                  Deck deck, domain.game.Player[] players, Random rand,
                  List<Integer> attackQueue,
@@ -53,7 +57,38 @@ public class Game {
 		this.attacked = false;
 	}
 
-	public void swapTopAndBottom() {
+    public void setCardEffectInfrastructure(CardEffectRegistry cardEffectRegistry, ReactionManager reactionManager, GameInteractionPort interactionPort) {
+        this.cardEffectRegistry = cardEffectRegistry;
+        this.reactionManager = reactionManager;
+        this.interactionPort = interactionPort;
+    }
+
+    public void playCard(int playerIndex, Card card) {
+        if (cardEffectRegistry == null || reactionManager == null || interactionPort == null) {
+            throw new IllegalStateException("Card effect infrastructure not initialized");
+        }
+
+        CardEffect effect = cardEffectRegistry.get(card.getCardType());
+        if (effect == null) {
+            // TODO: No effect registered, do legacy behavior
+            return;
+        }
+
+        PlayContext playContext = new PlayContext(this, playerIndex, interactionPort);
+
+        if (effect.isNopeable()) {
+            ReactionContext reactionContext =
+                    new ReactionContext(this, playerIndex, card, interactionPort);
+            boolean canceled = reactionManager.resolveNopeReactions(reactionContext);
+            if (canceled) {
+                return;
+            }
+        }
+
+        effect.play(playContext);
+    }
+
+    public void swapTopAndBottom() {
 		if (checkDeckHasOneCardOrLess()) {
 			return;
 		}
