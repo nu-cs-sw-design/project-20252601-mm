@@ -34,7 +34,7 @@ public class Main {
         // Register effects we actually implemented
         registry.register(new ShuffleEffect(game));
         registry.register(new ReverseEffect(game));
-        // ExplodingKittenEffect will be registered later
+        registry.register(new ExplodingKittenEffect(game));
 
         // Wire into Game and give it the UI as interaction port
         game.setCardEffectInfrastructure(registry, reactionManager, gameUI);
