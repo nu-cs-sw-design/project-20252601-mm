@@ -1,7 +1,6 @@
 package domain.game;
 
 public interface GameInteractionPort {
-
     boolean askYesNo(String messageKey);
 
     int askForIndex(String messageKey, int minInclusive, int maxInclusive);
