@@ -769,7 +769,8 @@ public class GameUI implements GameInteractionPort {
 					}
 				}
 			}
-			return playExplodingKitten(currentPlayerIdx);
+            game.playCard(currentPlayerIdx, cardDrawn);
+            return !game.checkIfPlayerDead(currentPlayerIdx);
 		} else if (checkMatchingCardType(cardDrawn.getCardType(),
 				CardType.IMPLODING_KITTEN)) {
 			return playImplodingKitten(cardDrawn);
